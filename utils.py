@@ -17,6 +17,13 @@ RECT_CBACK  = None
 
 
 
+def computePSR(im):
+    _, mval, _, (mx, my) = cv2.minMaxLoc(im)
+    smean, sstd = im.mean(), im.std()
+    psr = (mval-smean) / (sstd+1e-5)
+    return psr
+
+
 def preprocessing(im):
     res = im.astype(np.float64)
     res = np.log(res+1.0)
@@ -80,8 +87,16 @@ def initTemplateCapture(cback):
     cv2.setMouseCallback('frame', captureRectangle)
 
 
-def drawRectangle(im, pts):
-    cv2.rectangle(im, (pts[0,1],pts[0,0]),(pts[1,1],pts[1,0]), (0, 255, 0), 2)
+def drawRectangle(im, pts, cross):
+    if not cross:
+        c = (255, 255, 255)
+    else:
+        c = (0,0,0)
+    cv2.rectangle(im, (pts[0,1],pts[0,0]),(pts[1,1],pts[1,0]), c, 2)
+    if cross:
+        cv2.line(im, (pts[0,1],pts[0,0]),(pts[1,1],pts[1,0]), c, 2)
+        cv2.line(im, (pts[1,1],pts[0,0]),(pts[0,1],pts[1,0]), c, 2)
+        
     
     
     

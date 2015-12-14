@@ -10,6 +10,7 @@ import utils
 import numpy as np
 import pylab as pl
 import scipy
+import cv2
 from scipy import fftpack
 
 
@@ -23,6 +24,7 @@ FILTER_STD      = 2.0
 LEARNING_RATE   = 0.125
 REG_FACTOR      = 0.01
 TPL_CENTER      = np.zeros(2)
+PSR_THRES       = 6.0
 
 
 def initFilter(tpl):
@@ -40,6 +42,9 @@ def initFilter(tpl):
     FILTER_NUM = foutput * np.conj(ftpl)
     FILTER_DEN = ftpl * np.conj(ftpl)
     FILTER_INIT = True
+    
+    psr = utils.computePSR(output)
+    #W print psr
 
 def tplCback(pts):
     global TPL_RECT
@@ -75,13 +80,18 @@ def updateFilter(tpl):
     
 def processFrame(im):
     utils.preprocessing(im)
+    #To see in the right way
+    im = cv2.flip(im, 1)
+    im_height, im_width = im.shape
     global TPL_RECT
     global TPL_CENTER
     global FILTER_INIT
     global FILTER_NUM
     global FILTER_DEN
     global COS_WINDOW
+    global PSR_THRES
     
+    psr_test = False
     if TPL_RECT != None:
         tplc = TPL_RECT.astype(np.uint32)
         patch = im[tplc[0,0]:tplc[1,0], tplc[0,1]:tplc[1,1]];
@@ -102,17 +112,29 @@ def processFrame(im):
                 g = np.real(np.fft.ifft2(G))
                 utils.showImage('output', g);
                 utils.showImage('filter', np.real(np.fft.fftshift(np.fft.ifft2(np.conj(FILTER_NUM/FILTER_DEN)))));
-                peak_pos = np.argmax(g);
-                dy = peak_pos // width - height//2
-                dx = peak_pos % width - width//2
-                tplc[:,0] -= dy
-                tplc[:,1] -= dx
-                TPL_RECT[:,0] -= dy
-                TPL_RECT[:,1] -= dx
-                new_patch = im[tplc[0,0]:tplc[1,0], tplc[0,1]:tplc[1,1]];
-                updateFilter(new_patch)
+                psr = utils.computePSR(g)
+                psr_test = psr > PSR_THRES
+                if True:
+                    peak_pos = np.argmax(g);
+                    dy = peak_pos // width - height//2
+                    dx = peak_pos % width - width//2
+                    if tplc[0,0] - dy < 0:
+                        dy = tplc[0,0]
+                    if tplc[1,0] - dy >= im_height:
+                        dy = tplc[1,0] - im_height
+                    if tplc[0,1] - dx < 0:
+                        dx = tplc[0,1]
+                    if tplc[1,1] - dx >= im_width:
+                        dx = tplc[1,1] - im_width
+                    tplc[:,0] -= dy
+                    tplc[:,1] -= dx
+                    TPL_RECT[:,0] -= dy
+                    TPL_RECT[:,1] -= dx
+                    new_patch = im[tplc[0,0]:tplc[1,0], tplc[0,1]:tplc[1,1]];
+                    updateFilter(new_patch)
+                print psr
 
-        utils.drawRectangle(im, tplc)
+        utils.drawRectangle(im, tplc, not psr_test)
     
     return im
 
