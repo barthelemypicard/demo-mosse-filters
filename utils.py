@@ -10,6 +10,7 @@ import numpy as np
 import pylab as pl
 import scipy
 import cv2
+import time
 
 
 RECT_PTS    = np.zeros((2,2))
@@ -54,14 +55,22 @@ def showImage(title, im):
 
 def runCamLoop(cback, camid = 0):
     cap = cv2.VideoCapture(camid)
+    starting_time = time.time()
+    nb_frames = 0
     while(True):
         ret, frame = cap.read()
         im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         im = cback(im)
         
+        nb_frames += 1
+        current_time = time.time()
         cv2.imshow('frame', im)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1)
+        if key & 0xFF == ord('q'):
             break
+        elif key & 0xFF == ord('f'):
+            print "Moyenne de %.02f FPS" % (nb_frames / (current_time - starting_time))
+        
         
     cap.release()
     cv2.destroyAllWindows()

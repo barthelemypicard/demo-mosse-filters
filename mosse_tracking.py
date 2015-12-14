@@ -52,7 +52,7 @@ def tplCback(pts):
     global FILTER_INIT
     
     if TPL_RECT == None:
-        TPL_RECT = pts
+        TPL_RECT = pts.astype(np.int64)
         width = pts[1, 1] - pts[0, 1]
         height = pts[1, 0] - pts[0, 0]
         cos_col = np.sin(np.pi*np.arange(0, height)/(height-1.0)).reshape((height, 1))
@@ -93,7 +93,7 @@ def processFrame(im):
     
     psr_test = False
     if TPL_RECT != None:
-        tplc = TPL_RECT.astype(np.uint32)
+        tplc = TPL_RECT.astype(np.int64)
         patch = im[tplc[0,0]:tplc[1,0], tplc[0,1]:tplc[1,1]];
         if not FILTER_INIT:
             initFilter(patch)
@@ -132,7 +132,7 @@ def processFrame(im):
                     TPL_RECT[:,1] -= dx
                     new_patch = im[tplc[0,0]:tplc[1,0], tplc[0,1]:tplc[1,1]];
                     updateFilter(new_patch)
-                print psr
+                # print psr
 
         utils.drawRectangle(im, tplc, not psr_test)
     
